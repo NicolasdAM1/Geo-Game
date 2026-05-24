@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Caça-Direções</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --cor-fundo: #87ceeb;
+        --cor-madeira: #8b5a2b;
+        --cor-bussola: #f1c40f;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Fredoka", sans-serif;
+      }
+
+      body {
+        background-color: var(--cor-fundo);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+        flex-direction: column;
+      }
+
+      #tela-selecao,
+      #tela-jogo {
+        display: none;
+        text-align: center;
+      }
+
+      #tela-selecao.ativo,
+      #tela-jogo.ativo {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      /* Seleção de Personagem */
+      h1 {
+        color: white;
+        text-shadow: 2px 2px 0 var(--cor-madeira);
+        margin-bottom: 20px;
+      }
+
+      .container-personagens {
+        display: flex;
+        gap: 20px;
+      }
+
+      .card-personagem {
+        background: white;
+        border: 4px solid var(--cor-madeira);
+        border-radius: 15px;
+        padding: 20px;
+        cursor: pointer;
+        transition: transform 0.2s;
+
+        width: 280px; /* Largura fixa para ambos */
+        height: 240px; /* Altura fixa para ambos */
+        display: flex; /* Permite organizar o conteúdo interno */
+        flex-direction: column; /* Coloca o emoji em cima e o texto embaixo */
+        justify-content: center; /* Centraliza verticalmente */
+        align-items: center; /* Centraliza horizontalmente */
+        text-align: center; /* Garante que o texto em si fique no meio */
+      }
+
+      .card-personagem:hover {
+        transform: scale(1.1);
+      }
+
+      .emoji-grande {
+        font-size: 4rem;
+      }
+
+      /* Interface de Jogo */
+      #ui-topo {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 10px;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      /* Mapa e Células Corrigidos */
+      #container-mapa {
+        width: 300px;
+        height: 300px;
+        background-color: #e0f7fa;
+        border: 8px solid var(--cor-madeira);
+        border-radius: 10px;
+        position: relative;
+        transition: transform 1.5s ease-in-out;
+        overflow: hidden;
+        /* CORREÇÃO: Garante que o espaço interno tenha exatamente 300px */
+        box-sizing: content-box;
+      }
+
+      .celula {
+        width: 60px;
+        height: 60px;
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2.5rem; /* Emoji levemente maior para melhor visualização */
+        transition:
+          top 0.3s,
+          left 0.3s;
+      }
+
+      #rosa-dos-ventos {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 8rem;
+        opacity: 0.2;
+        pointer-events: none;
+      }
+
+      /* Controles da Bússola */
+      #controles-bussola {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: 60px 60px 60px;
+        grid-template-rows: 60px 60px 60px;
+        gap: 5px;
+        background: var(--cor-bussola);
+        padding: 15px;
+        border-radius: 50%;
+        border: 5px solid var(--cor-madeira);
+      }
+
+      .btn-dir {
+        background: white;
+        border: 2px solid var(--cor-madeira);
+        border-radius: 10px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .btn-dir:active {
+        background: #ddd;
+      }
+
+      #btn-n {
+        grid-column: 2;
+        grid-row: 1;
+      }
+      #btn-w {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      #btn-e {
+        grid-column: 3;
+        grid-row: 2;
+      }
+      #btn-s {
+        grid-column: 2;
+        grid-row: 3;
+      }
+
+      /* CORREÇÃO: Sistema de Modal para o Diálogo */
+      #overlay-dialogo {
+        display: none; /* Escondido por padrão */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 999;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #overlay-dialogo.ativo {
+        display: flex;
+      }
+
+      #caixa-dialogo {
+        background: white;
+        border: 6px solid var(--cor-madeira);
+        border-radius: 15px;
+        padding: 20px;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        animation: zoomIn 0.3s ease-out;
+      }
+
+      @keyframes zoomIn {
+        from {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      #papagaio-avatar {
+        font-size: 4rem;
+        margin-bottom: 10px;
+      }
+
+      #texto-papagaio {
+        font-size: 1.2rem;
+        color: #333;
+        margin-bottom: 20px;
+        line-height: 1.4;
+      }
+
+      #btn-continuar {
+        padding: 10px 25px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.1s;
+      }
+
+      #btn-continuar:active {
+        transform: scale(0.95);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="tela-selecao" class="ativo">
+      <h1>Escolha seu Comandante:</h1>
+      <div class="container-personagens">
+        <div class="card-personagem" onclick="iniciarJogo('🐶')">
+          <div class="emoji-grande">🐶</div>
+          <h2>Capitão Maurujo</h2>
+        </div>
+        <div class="card-personagem" onclick="iniciarJogo('🐱')">
+          <div class="emoji-grande">🐱</div>
+          <h2>Capitã Miar</h2>
+        </div>
+      </div>
+    </div>
+
+    <div id="tela-jogo">
+      <div id="ui-topo">
+        <span id="texto-nivel">Nível 1</span>
+        <span id="texto-instrucao">Chegue ao tesouro (❌)!</span>
+      </div>
+
+      <div id="container-mapa">
+        <div id="rosa-dos-ventos">🧭</div>
+      </div>
+
+      <div id="controles-bussola">
+        <button id="btn-n" class="btn-dir" onclick="mover('n')">N</button>
+        <button id="btn-w" class="btn-dir" onclick="mover('w')">O</button>
+        <button id="btn-e" class="btn-dir" onclick="mover('e')">L</button>
+        <button id="btn-s" class="btn-dir" onclick="mover('s')">S</button>
+      </div>
+    </div>
+
+    <div id="overlay-dialogo">
+      <div id="caixa-dialogo">
+        <div id="papagaio-avatar">🦜</div>
+        <p id="texto-papagaio">Arr! Mensagem do Loro!</p>
+        <button id="btn-continuar" onclick="fecharDialogo()">Entendido!</button>
+      </div>
+    </div>
+
+    <script>
+      let jogadorEmoji = "";
+      let nivelAtual = 1;
+      let posJogador = { x: 2, y: 4 };
+      let posTesouro = { x: 2, y: 1 };
+      const tamanhoCelula = 60;
+      let mapaRotacao = 0;
+
+      const telaSelecao = document.getElementById("tela-selecao");
+      const telaJogo = document.getElementById("tela-jogo");
+      const containerMapa = document.getElementById("container-mapa");
+      const overlayDialogo = document.getElementById("overlay-dialogo");
+      const textoPapagaio = document.getElementById("texto-papagaio");
+      const textoNivel = document.getElementById("texto-nivel");
+
+      const elJogador = document.createElement("div");
+      elJogador.className = "celula";
+      const elTesouro = document.createElement("div");
+      elTesouro.className = "celula";
+      elTesouro.textContent = "❌";
+
+      containerMapa.appendChild(elTesouro);
+      containerMapa.appendChild(elJogador);
+
+      function iniciarJogo(emojiEscolhido) {
+        jogadorEmoji = emojiEscolhido;
+        elJogador.textContent = jogadorEmoji;
+
+        telaSelecao.classList.remove("ativo");
+        telaJogo.classList.add("ativo");
+
+        carregarNivel();
+      }
+
+      function carregarNivel() {
+        textoNivel.textContent = `Nível ${nivelAtual}`;
+        containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
+
+        elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
+        elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
+
+        if (nivelAtual === 1) {
+          posJogador = { x: 2, y: 4 };
+          posTesouro = { x: 2, y: 0 };
+        } else if (nivelAtual === 2) {
+          posJogador = { x: 2, y: 4 };
+          posTesouro = { x: 2, y: 0 };
+          mostrarDialogo(
+            "Arr, marujo! Curiosidade dos Sete Mares: só porque o tesouro está lá no Norte, não quer dizer que você tem que 'subir' de verdade. As vezes o Norte é descendo a montanha! Siga a bússola!",
+          );
+        } else if (nivelAtual === 3) {
+          posJogador = { x: 0, y: 2 };
+          posTesouro = { x: 4, y: 2 };
+          mapaRotacao = 90;
+          containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
+          elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
+          elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
+          mostrarDialogo(
+            "Uma tempestade girou o nosso mapa! Cuidado, marujo, olhe para a Rosa dos Ventos no fundo do mapa para saber onde é o Norte agora!",
+          );
+        }
+
+        atualizarPosicoesVisuais();
+      }
+
+      function mover(direcao) {
+        if (direcao === "n" && posJogador.y > 0) posJogador.y--;
+        if (direcao === "s" && posJogador.y < 4) posJogador.y++;
+        if (direcao === "e" && posJogador.x < 4) posJogador.x++;
+        if (direcao === "w" && posJogador.x > 0) posJogador.x--;
+
+        atualizarPosicoesVisuais();
+        verificarVitoria();
+      }
+
+      function atualizarPosicoesVisuais() {
+        elJogador.style.left = posJogador.x * tamanhoCelula + "px";
+        elJogador.style.top = posJogador.y * tamanhoCelula + "px";
+
+        elTesouro.style.left = posTesouro.x * tamanhoCelula + "px";
+        elTesouro.style.top = posTesouro.y * tamanhoCelula + "px";
+      }
+
+      function verificarVitoria() {
+        if (posJogador.x === posTesouro.x && posJogador.y === posTesouro.y) {
+          setTimeout(() => {
+            if (nivelAtual < 3) {
+              nivelAtual++;
+              carregarNivel();
+            } else {
+              mostrarDialogo("Parabéns, Pirata! Você dominou a bússola.");
+            }
+          }, 300);
+        }
+      }
+
+      function mostrarDialogo(texto) {
+        textoPapagaio.textContent = texto;
+        // Exibe o fundo escuro com a caixa centralizada
+        overlayDialogo.classList.add("ativo");
+      }
+
+      function fecharDialogo() {
+        // Esconde o modal ao clicar em Entendido
+        overlayDialogo.classList.remove("ativo");
+      }
+    </script>
+  </body>
+</html>
