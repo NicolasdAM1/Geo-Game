@@ -135,7 +135,6 @@
             font-weight: bold;
         }
 
-        /* Novo Wrapper para isolar a rotação do mapa da posição da bússola */
         #wrapper-mapa {
             position: relative;
             width: 90vw;
@@ -182,7 +181,6 @@
             z-index: 10;
         }
 
-        /* CAIXA DA BÚSSOLA CORRIGIDA: Sempre fixa no canto superior direito */
         #indicador-norte {
             position: absolute;
             top: 15px;
@@ -197,16 +195,15 @@
             font-size: 0.9rem;
             font-weight: bold;
             pointer-events: none;
-            z-index: 99; /* Fica acima de tudo */
+            z-index: 99; 
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(2px);
         }
 
-        /* Apenas este elemento interno vai girar para indicar o norte real */
         #seta-norte {
             display: inline-block;
             text-align: center;
-            transition: transform 1.5s ease-in-out; /* Suavidade idêntica à do mapa */
+            transition: transform 1.5s ease-in-out; 
         }
 
         #seta-norte span {
@@ -216,16 +213,16 @@
         }
 
         /* =========================================
-           BÚSSOLA DE CONTROLE ESTILIZADA MINIMALISTA
+           BÚSSOLA DE CONTROLE MODIFICADA ("IR AO...")
            ========================================= */
         #controles-bussola {
             position: relative;
-            width: 170px;
-            height: 170px;
+            width: 190px; /* Aumentado sutilmente para acomodar melhor os novos botões */
+            height: 190px;
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
-            margin-top: 20px;
+            margin-top: 25px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             backdrop-filter: blur(4px);
         }
@@ -243,7 +240,7 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 8px;
-            height: 120px;
+            height: 130px;
             background: linear-gradient(to bottom, #e74c3c 50%, #ffffff 50%);
             clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
             pointer-events: none;
@@ -261,14 +258,16 @@
             border-radius: 50%;
         }
 
+        /* Reformulado para formato pílula devido ao texto "Ir ao Norte" */
         .btn-dir {
             position: absolute;
-            width: 42px; 
-            height: 42px;
+            padding: 4px 10px;
+            min-width: 105px; 
+            height: 36px;
             background: #ffffff;
-            border: none;
-            border-radius: 50%;
-            font-size: 1.1rem;
+            border: 2px solid var(--cor-madeira);
+            border-radius: 12px;
+            font-size: 0.8rem;
             cursor: pointer;
             font-weight: 600;
             transform: translate(-50%, -50%);
@@ -279,6 +278,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
             transition: background 0.2s, transform 0.1s, color 0.2s;
             z-index: 5;
+            white-space: nowrap;
         }
 
         .btn-dir:hover {
@@ -287,14 +287,14 @@
         }
 
         .btn-dir:active {
-            transform: translate(-50%, -50%) scale(0.9);
+            transform: translate(-50%, -50%) scale(0.95);
             background: #1a252f;
         }
 
         #btn-n { top: 0%; left: 50%; }
         #btn-s { top: 100%; left: 50%; }
-        #btn-w { top: 50%; left: 0%; }
-        #btn-e { top: 50%; left: 100%; }
+        #btn-w { top: 50%; left: -10%; }
+        #btn-e { top: 50%; left: 110%; }
 
         /* ========================================= */
 
@@ -327,7 +327,7 @@
         }
 
         #papagaio-avatar { font-size: 4rem; margin-bottom: 10px; }
-        #texto-papagaio { font-size: 1.2rem; color: #333; margin-bottom: 20px; }
+        #texto-papagaio { font-size: 1.1rem; color: #333; margin-bottom: 20px; line-height: 1.4; }
         #btn-continuar {
             padding: 10px 25px;
             font-size: 1.2rem;
@@ -347,11 +347,11 @@
         <div class="container-personagens">
             <div class="card-personagem" onclick="iniciarJogo('sprite-cachorro')">
                 <div class="sprite sprite-cachorro preview-personagem"></div>
-                <h2>Capitão Cachorro</h2> 
+                <h2>Capitão Maurujo</h2> 
             </div>
             <div class="card-personagem" onclick="iniciarJogo('sprite-gata')">
                 <div class="sprite sprite-gata preview-personagem"></div>
-                <h2>Capitã Gata</h2>
+                <h2>Capitã Miarr</h2>
             </div>
         </div>
     </div>
@@ -359,7 +359,7 @@
     <div id="tela-jogo">
         <div id="ui-topo">
             <span id="texto-nivel">Nível 1</span>
-            <span id="texto-instrucao">Ache o tesouro!</span>
+            <span id="texto-instrucao">Ache o local do tesouro!</span>
         </div>
 
         <div id="wrapper-mapa">
@@ -375,17 +375,17 @@
 
         <div id="controles-bussola">
             <div class="agulha-centro"></div>
-            <button id="btn-n" class="btn-dir" onclick="mover('n')">N</button>
-            <button id="btn-w" class="btn-dir" onclick="mover('w')">O</button>
-            <button id="btn-e" class="btn-dir" onclick="mover('e')">L</button>
-            <button id="btn-s" class="btn-dir" onclick="mover('s')">S</button>
+            <button id="btn-n" class="btn-dir" onclick="mover('n')">Ir ao Norte</button>
+            <button id="btn-w" class="btn-dir" onclick="mover('w')">Ir ao Oeste</button>
+            <button id="btn-e" class="btn-dir" onclick="mover('e')">Ir ao Leste</button>
+            <button id="btn-s" class="btn-dir" onclick="mover('s')">Ir ao Sul</button>
         </div>
     </div>
 
     <div id="overlay-dialogo">
         <div id="caixa-dialogo">
             <div id="papagaio-avatar">🦜</div>
-            <p id="texto-papagaio">Arr! Mensagem do Loro!</p>
+            <p id="texto-papagaio">Arr! Mensagem do Loro Ajudante!</p>
             <button id="btn-continuar" onclick="fecharDialogo()">Entendido!</button>
         </div>
     </div>
@@ -396,6 +396,15 @@
         let posTesouro = { x: 0, y: 0 };
         let mapaRotacao = 0; 
         let controlePiscar;
+
+        // Pool com as 5 curiosidades solicitadas sobre direções
+        const curiosidadesRosaDosVentos = [
+            "Arr! Sabia que o Norte não é necessariamente uma 'subida'? Em um mapa, 'cima' é apenas uma convenção cartográfica! O Norte aponta para o polo magnético da Terra, não para o céu!",
+            "Marujo, a Rosa dos Ventos nasceu na Grécia Antiga! Ela foi criada originalmente para indicar a direção dos ventos no Mar Mediterrâneo, e não apenas para fins de navegação em terra!",
+            "Olho na bússola! Entre os pontos cardeais existem os pontos colaterais: Nordeste, Sudeste, Sudoeste e Noroeste. Eles dividem o horizonte com ainda mais precisão!",
+            "Uma dica de navegação velha como o mundo: o Sol sempre nasce no lado Leste (Oriente) e se põe no lado Oeste (Ocidente). Use isso caso perca sua bússola em uma ilha deserta!",
+            "Atenção, Capitão! As bússolas apontam para o Norte Magnético, e não para o Norte Geográfico verdadeiro. E o mais louco: o Norte Magnético muda de lugar lentamente ao longo dos anos!"
+        ];
 
         const telaSelecao = document.getElementById('tela-selecao');
         const telaJogo = document.getElementById('tela-jogo');
@@ -439,22 +448,30 @@
 
         function carregarNivel() {
             textoNivel.textContent = `Nível ${nivelAtual}`;
+            
+            // Retorna o jogador para uma posição base segura a cada novo mapa
+            posJogador = { x: 2, y: 4 };
 
-            if (nivelAtual === 1 || nivelAtual === 2) {
-                posJogador = { x: 2, y: 4 };
+            // O mapa rotaciona +90 graus progressivamente a cada novo nível (a partir do nível 2)
+            if (nivelAtual > 1) {
+                mapaRotacao += 90;
+            } else {
                 mapaRotacao = 0;
-            } else if (nivelAtual === 3) {
-                posJogador = { x: 0, y: 2 };
-                mapaRotacao = 90; 
             }
 
             atualizarRotacoesVisuais();
             sortearTesouro();
 
-            if (nivelAtual === 2) {
-                mostrarDialogo("Arr, marujo! Curiosidade: o tesouro está em um novo lugar. Lembra que descer a montanha também pode ser ir pro Norte!");
-            } else if (nivelAtual === 3) {
-                mostrarDialogo("Tempestade à vista! O mapa girou. Olhe a indicação de Norte no canto para não se perder!");
+            // A cada duas viradas de mapa (Nível 3, Nível 5, Nível 7, Nível 9, Nível 11), o Papagaio conta uma curiosidade
+            let totalViradas = nivelAtual - 1;
+            if (totalViradas > 0 && totalViradas % 2 === 0) {
+                let indiceCuriosidade = (totalViradas / 2) - 1;
+                if (indiceCuriosidade < curiosidadesRosaDosVentos.length) {
+                    mostrarDialogo(curiosidadesRosaDosVentos[indiceCuriosidade]);
+                }
+            } else if (nivelAtual > 1) {
+                // Alerta padrão de tempestade/giro para os níveis intermediários
+                mostrarDialogo("Os ventos mudaram e o mapa girou de novo! Fique atento à bússola fixa no topo!");
             }
 
             atualizarPosicoesVisuais();
@@ -464,8 +481,6 @@
             containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
             elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
             elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
-            
-            // CORREÇÃO: A seta interna gira com o mapa para apontar exatamente onde o Norte real está agora!
             setaNorte.style.transform = `rotate(${mapaRotacao}deg)`;
         }
 
@@ -490,17 +505,18 @@
         function verificarVitoria() {
             if (posJogador.x === posTesouro.x && posJogador.y === posTesouro.y) {
                 setTimeout(() => {
-                    if (nivelAtual < 3) {
+                    // O jogo avança até o nível 11 para que o jogador veja todas as 5 curiosidades (10 viradas no total)
+                    if (nivelAtual < 11) {
                         nivelAtual++;
                         carregarNivel();
                     } else {
-                        mostrarDialogo("Parabéns, Capitão! Você dominou a bússola! O jogo vai recomeçar.");
+                        mostrarDialogo("Parabéns, Capitão! Você encontrou todos os tesouros e aprendeu todos os segredos da Rosa dos Ventos! O jogo vai reiniciar.");
                         setTimeout(() => {
                             nivelAtual = 1;
                             mapaRotacao = 0;
                             telaJogo.classList.remove('ativo');
                             telaSelecao.classList.add('ativo');
-                        }, 3000);
+                        }, 4000);
                     }
                 }, 300);
             }
