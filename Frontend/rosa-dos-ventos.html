@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A Bússola Mágica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cor-fundo: #87CEEB;
+            --cor-madeira: #5c4033;
+            --cor-bussola: #f1c40f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Fredoka', sans-serif;
+            user-select: none; /* Evita selecionar texto ao clicar rápido */
+        }
+
+        body {
+            background-color: var(--cor-fundo);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        #tela-selecao, #tela-jogo {
+            display: none;
+            text-align: center;
+            width: 100%;
+        }
+
+        #tela-selecao.ativo, #tela-jogo.ativo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 0 var(--cor-madeira);
+            margin-bottom: 20px;
+            font-size: 2rem;
+            padding: 0 10px;
+        }
+
+        /* =========================================
+           TELA DE SELEÇÃO RESPONSIVA
+           ========================================= */
+        .container-personagens {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .card-personagem {
+            background: white;
+            border: 4px solid var(--cor-madeira);
+            border-radius: 15px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 45%; 
+            max-width: 200px;
+            aspect-ratio: 1 / 1; /* Mantém sempre quadrado */
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .card-personagem:active {
+            transform: scale(0.95);
+        }
+
+        .card-personagem h2 {
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        /* =========================================
+           SISTEMA DE SPRITES (ADAPTADO PARA PORCENTAGEM)
+           ========================================= */
+        .sprite {
+            width: 100%;
+            height: 100%;
+            /* 100% de largura (1 frame) e 200% de altura (2 frames) */
+            background-size: 100% 200%; 
+            background-repeat: no-repeat;
+            background-position: top; /* Inicia no frame de cima */
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .preview-personagem {
+            width: 60px;
+            height: 60px;
+            transform: scale(1.5);
+            margin-bottom: 10px;
+        }
+
+        .sprite-cachorro {
+            background-image: url('../Assets/CachorroPirata.png'); 
+        }
+
+        .sprite-gata {
+            background-image: url('../Assets/GataPirata.png'); 
+        }
+
+        .sprite-tesouro {
+            background-size: 100% 100%; /* Tesouro não tem 2 frames, então preenche a celula toda */
+            background-image: url('../Assets/X-MarksTheSpot.png'); 
+        }
+
+        /* =========================================
+           MAPA RESPONSIVO E CENÁRIO DE RELEVO
+           ========================================= */
+        #ui-topo {
+            display: flex;
+            justify-content: space-between;
+            width: 90vw;
+            max-width: 400px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 3px solid var(--cor-madeira);
+            font-weight: bold;
+        }
+
+        #container-mapa {
+            width: 90vw; /* 90% da largura da tela */
+            max-width: 400px; /* Mas nunca maior que 400px */
+            aspect-ratio: 400 / 360;
+            
+            /* SIMULAÇÃO DE RELEVO: Fundo gradiente descendo a montanha */
+            background-image: url('../Assets/Background.png');
+            background-size: 100% 100%; /* Força a imagem a preencher o container exatamente */
+            background-repeat: no-repeat;
+
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+
+            border: 8px solid var(--cor-madeira);
+            border-radius: 10px;
+            position: relative;
+            transition: transform 1.5s ease-in-out; 
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        /* Grade visual provisória para ajudar a ver as casas */
+        #container-mapa::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
+            background-size: 20% 20%; /* 5x5 colunas */
+            pointer-events: none;
+        }
+
+        .celula {
+            position: absolute;
+            width: 20%;  /* 1/5 do mapa */
+            height: 20%; /* 1/5 do mapa */
+            transition: top 0.3s ease-out, left 0.3s ease-out; /* Movimento suave */
+            z-index: 10;
+        }
+
+        #rosa-dos-ventos {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20vw; /* Responsivo */
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        /* =========================================
+           BÚSSOLA DE CONTROLE ESTILIZADA
+           ========================================= */
+        #controles-bussola {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 100%);
+            border: 8px solid var(--cor-madeira);
+            border-radius: 50%;
+            margin-top: 35px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        /* Agulha Magnética feita com CSS */
+        .agulha-centro {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 110px;
+            background: linear-gradient(to bottom, #e74c3c 50%, #ecf0f1 50%);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            pointer-events: none; /* Não atrapalha o clique */
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* Pino central da bússola */
+        .agulha-centro::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px; height: 10px;
+            background: #2c3e50;
+            border-radius: 50%;
+        }
+
+        .btn-dir {
+            position: absolute;
+            width: 50px; 
+            height: 50px;
+            background: white;
+            border: 3px solid var(--cor-madeira);
+            border-radius: 50%;
+            font-size: 1.3rem;
+            cursor: pointer;
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 0 var(--cor-madeira);
+            color: var(--cor-madeira);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-dir:active {
+            transform: translate(-50%, -46%); /* Efeito de apertar o botão */
+            box-shadow: 0 0 0 var(--cor-madeira);
+            background: #f0f0f0;
+        }
+
+        /* Posicionamento dos botões nos extremos do círculo */
+        #btn-n { top: -10px; left: 50%; }
+        #btn-s { top: 190px; left: 50%; }
+        #btn-w { top: 50%; left: -10px; }
+        #btn-e { top: 50%; left: 190px; }
+
+        /* ========================================= */
+
+        #overlay-dialogo {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            justify-content: center; align-items: center;
+            padding: 20px;
+        }
+
+        #overlay-dialogo.ativo { display: flex; }
+
+        #caixa-dialogo {
+            background: white;
+            border: 6px solid var(--cor-madeira);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            animation: zoomIn 0.3s ease-out;
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        #papagaio-avatar { font-size: 4rem; margin-bottom: 10px; }
+        #texto-papagaio { font-size: 1.2rem; color: #333; margin-bottom: 20px; }
+        #btn-continuar {
+            padding: 10px 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="tela-selecao" class="ativo">
+        <h1>Escolha seu Capitão!</h1>
+        <div class="container-personagens">
+            <div class="card-personagem" onclick="iniciarJogo('sprite-cachorro')">
+                <div class="sprite sprite-cachorro preview-personagem"></div>
+                <h2>Capitão Cachorro</h2> 
+            </div>
+            <div class="card-personagem" onclick="iniciarJogo('sprite-gata')">
+                <div class="sprite sprite-gata preview-personagem"></div>
+                <h2>Capitã Gata</h2>
+            </div>
+        </div>
+    </div>
+
+    <div id="tela-jogo">
+        <div id="ui-topo">
+            <span id="texto-nivel">Nível 1</span>
+            <span id="texto-instrucao">Ache o tesouro!</span>
+        </div>
+
+        <div id="container-mapa">
+            <div id="rosa-dos-ventos">🧭</div>
+            <div id="tesouro-obj" class="celula sprite sprite-tesouro"></div>
+            <div id="jogador-obj" class="celula sprite"></div>
+        </div>
+
+        <div id="controles-bussola">
+            <div class="agulha-centro"></div>
+            <button id="btn-n" class="btn-dir" onclick="mover('n')">N</button>
+            <button id="btn-w" class="btn-dir" onclick="mover('w')">O</button>
+            <button id="btn-e" class="btn-dir" onclick="mover('e')">L</button>
+            <button id="btn-s" class="btn-dir" onclick="mover('s')">S</button>
+        </div>
+    </div>
+
+    <div id="overlay-dialogo">
+        <div id="caixa-dialogo">
+            <div id="papagaio-avatar">🦜</div>
+            <p id="texto-papagaio">Arr! Mensagem do Loro!</p>
+            <button id="btn-continuar" onclick="fecharDialogo()">Entendido!</button>
+        </div>
+    </div>
+
+    <script>
+        let nivelAtual = 1;
+        let posJogador = { x: 2, y: 4 }; 
+        let posTesouro = { x: 0, y: 0 };
+        let mapaRotacao = 0; 
+        let controlePiscar;
+
+        const telaSelecao = document.getElementById('tela-selecao');
+        const telaJogo = document.getElementById('tela-jogo');
+        const containerMapa = document.getElementById('container-mapa');
+        const overlayDialogo = document.getElementById('overlay-dialogo');
+        const textoPapagaio = document.getElementById('texto-papagaio');
+        const textoNivel = document.getElementById('texto-nivel');
+
+        const elJogador = document.getElementById('jogador-obj');
+        const elTesouro = document.getElementById('tesouro-obj');
+
+        function iniciarJogo(classeSprite) {
+            elJogador.className = `celula sprite ${classeSprite}`;
+            telaSelecao.classList.remove('ativo');
+            telaJogo.classList.add('ativo');
+            
+            carregarNivel();
+            iniciarAnimacaoIdle();
+        }
+
+        function iniciarAnimacaoIdle() {
+            if(controlePiscar) clearInterval(controlePiscar);
+            
+            controlePiscar = setInterval(() => {
+                // Ao usar % com background-size 200%, 100% mostra a parte de baixo (Frame 2)
+                elJogador.style.backgroundPosition = 'bottom';
+                
+                setTimeout(() => {
+                    // Volta pro Frame 1 no topo
+                    elJogador.style.backgroundPosition = 'top';
+                }, 1000);
+                
+            }, 4000); 
+        }
+
+        // Sistema de Sorteio do Tesouro
+        function sortearTesouro() {
+            do {
+                posTesouro.x = Math.floor(Math.random() * 5); // Sorteia de 0 a 4
+                posTesouro.y = Math.floor(Math.random() * 5); // Sorteia de 0 a 4
+            } while (posTesouro.x === posJogador.x && posTesouro.y === posJogador.y);
+            // O loop garante que o tesouro NUNCA vai cair na mesma casa que o jogador
+        }
+
+        function carregarNivel() {
+            textoNivel.textContent = `Nível ${nivelAtual}`;
+            containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
+            elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
+            elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
+
+            // Define posição inicial do jogador
+            if (nivelAtual === 1 || nivelAtual === 2) {
+                posJogador = { x: 2, y: 4 };
+            } else if (nivelAtual === 3) {
+                posJogador = { x: 0, y: 2 };
+                mapaRotacao = 90; 
+                containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
+                elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
+                elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
+            }
+
+            // Sorteia onde o baú vai aparecer neste nível
+            sortearTesouro();
+
+            // Mensagens da história
+            if (nivelAtual === 2) {
+                mostrarDialogo("Arr, marujo! Curiosidade: o tesouro está em um novo lugar. Lembra que descer a montanha também pode ser ir pro Norte!");
+            } else if (nivelAtual === 3) {
+                mostrarDialogo("Tempestade à vista! O mapa girou. Olhe a Rosa dos Ventos no fundo para não se perder!");
+            }
+
+            atualizarPosicoesVisuais();
+        }
+
+        function mover(direcao) {
+            if (direcao === 'n' && posJogador.y > 0) posJogador.y--;
+            if (direcao === 's' && posJogador.y < 4) posJogador.y++;
+            if (direcao === 'e' && posJogador.x < 4) posJogador.x++;
+            if (direcao === 'w' && posJogador.x > 0) posJogador.x--;
+
+            atualizarPosicoesVisuais();
+            verificarVitoria();
+        }
+
+        function atualizarPosicoesVisuais() {
+            // Agora usamos porcentagem (20% por casa) em vez de pixels fixos
+            elJogador.style.left = (posJogador.x * 20) + '%';
+            elJogador.style.top = (posJogador.y * 20) + '%';
+            
+            elTesouro.style.left = (posTesouro.x * 20) + '%';
+            elTesouro.style.top = (posTesouro.y * 20) + '%';
+        }
+
+        function verificarVitoria() {
+            if (posJogador.x === posTesouro.x && posJogador.y === posTesouro.y) {
+                setTimeout(() => {
+                    if (nivelAtual < 3) {
+                        nivelAtual++;
+                        carregarNivel();
+                    } else {
+                        mostrarDialogo("Parabéns, Capitão! Você dominou a bússola! O jogo vai recomeçar.");
+                        setTimeout(() => {
+                            nivelAtual = 1;
+                            mapaRotacao = 0;
+                            telaJogo.classList.remove('ativo');
+                            telaSelecao.classList.add('ativo');
+                        }, 3000);
+                    }
+                }, 300);
+            }
+        }
+
+        function mostrarDialogo(texto) {
+            textoPapagaio.textContent = texto;
+            overlayDialogo.classList.add('ativo');
+        }
+
+        function fecharDialogo() {
+            overlayDialogo.classList.remove('ativo');
+        }
+    </script>
+</body>
+</html>
