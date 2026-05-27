@@ -87,15 +87,14 @@
         }
 
         /* =========================================
-           SISTEMA DE SPRITES (ADAPTADO PARA PORCENTAGEM)
+           SISTEMA DE SPRITES
            ========================================= */
         .sprite {
             width: 100%;
             height: 100%;
-            /* 100% de largura (1 frame) e 200% de altura (2 frames) */
             background-size: 100% 200%; 
             background-repeat: no-repeat;
-            background-position: top; /* Inicia no frame de cima */
+            background-position: top; 
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
@@ -116,12 +115,12 @@
         }
 
         .sprite-tesouro {
-            background-size: 100% 100%; /* Tesouro não tem 2 frames, então preenche a celula toda */
+            background-size: 100% 100%; 
             background-image: url('../Assets/X-MarksTheSpot.png'); 
         }
 
         /* =========================================
-           MAPA RESPONSIVO E CENÁRIO DE RELEVO
+           UI E ESTRUTURA DO MAPA (FIXO COM WRAPPER)
            ========================================= */
         #ui-topo {
             display: flex;
@@ -136,14 +135,20 @@
             font-weight: bold;
         }
 
-        #container-mapa {
-            width: 90vw; /* 90% da largura da tela */
-            max-width: 400px; /* Mas nunca maior que 400px */
+        /* Novo Wrapper para isolar a rotação do mapa da posição da bússola */
+        #wrapper-mapa {
+            position: relative;
+            width: 90vw;
+            max-width: 400px;
             aspect-ratio: 400 / 360;
-            
-            /* SIMULAÇÃO DE RELEVO: Fundo gradiente descendo a montanha */
+            margin-bottom: 15px;
+        }
+
+        #container-mapa {
+            width: 100%;
+            height: 100%;
             background-image: url('../Assets/Background.png');
-            background-size: 100% 100%; /* Força a imagem a preencher o container exatamente */
+            background-size: 100% 100%; 
             background-repeat: no-repeat;
 
             image-rendering: pixelated;
@@ -157,7 +162,7 @@
             box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
         }
 
-        /* Grade visual provisória para ajudar a ver as casas */
+        /* Grade visual */
         #container-mapa::after {
             content: '';
             position: absolute;
@@ -165,95 +170,131 @@
             background-image: 
                 linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
-            background-size: 20% 20%; /* 5x5 colunas */
+            background-size: 20% 20%; 
             pointer-events: none;
         }
 
         .celula {
             position: absolute;
-            width: 20%;  /* 1/5 do mapa */
-            height: 20%; /* 1/5 do mapa */
-            transition: top 0.3s ease-out, left 0.3s ease-out; /* Movimento suave */
+            width: 20%;  
+            height: 20%; 
+            transition: top 0.3s ease-out, left 0.3s ease-out; 
             z-index: 10;
         }
 
-        #rosa-dos-ventos {
+        /* CAIXA DA BÚSSOLA CORRIGIDA: Sempre fixa no canto superior direito */
+        #indicador-norte {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 20vw; /* Responsivo */
-            opacity: 0.15;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
             pointer-events: none;
+            z-index: 99; /* Fica acima de tudo */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Apenas este elemento interno vai girar para indicar o norte real */
+        #seta-norte {
+            display: inline-block;
+            text-align: center;
+            transition: transform 1.5s ease-in-out; /* Suavidade idêntica à do mapa */
+        }
+
+        #seta-norte span {
+            font-size: 0.7rem;
+            display: block;
+            margin-top: -2px;
         }
 
         /* =========================================
-           BÚSSOLA DE CONTROLE ESTILIZADA
+           BÚSSOLA DE CONTROLE ESTILIZADA MINIMALISTA
            ========================================= */
         #controles-bussola {
             position: relative;
-            width: 180px;
-            height: 180px;
-            background: radial-gradient(circle, #ffeaa7 0%, #fdcb6e 100%);
-            border: 8px solid var(--cor-madeira);
+            width: 170px;
+            height: 170px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
-            margin-top: 35px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.3);
+            margin-top: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            backdrop-filter: blur(4px);
         }
 
-        /* Agulha Magnética feita com CSS */
+        #controles-bussola::before, #controles-bussola::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        #controles-bussola::before { top: 0; left: 50%; width: 1px; height: 100%; }
+        #controles-bussola::after { top: 50%; left: 0; width: 100%; height: 1px; }
+
         .agulha-centro {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 14px;
-            height: 110px;
-            background: linear-gradient(to bottom, #e74c3c 50%, #ecf0f1 50%);
+            width: 8px;
+            height: 120px;
+            background: linear-gradient(to bottom, #e74c3c 50%, #ffffff 50%);
             clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-            pointer-events: none; /* Não atrapalha o clique */
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 2;
         }
 
-        /* Pino central da bússola */
         .agulha-centro::after {
             content: '';
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 10px; height: 10px;
-            background: #2c3e50;
+            width: 8px; height: 8px;
+            background: #ffffff;
+            border: 2px solid #e74c3c;
             border-radius: 50%;
         }
 
         .btn-dir {
             position: absolute;
-            width: 50px; 
-            height: 50px;
-            background: white;
-            border: 3px solid var(--cor-madeira);
+            width: 42px; 
+            height: 42px;
+            background: #ffffff;
+            border: none;
             border-radius: 50%;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             transform: translate(-50%, -50%);
-            box-shadow: 0 4px 0 var(--cor-madeira);
-            color: var(--cor-madeira);
+            color: #2c3e50;
             display: flex;
             justify-content: center;
             align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: background 0.2s, transform 0.1s, color 0.2s;
+            z-index: 5;
+        }
+
+        .btn-dir:hover {
+            background: #2c3e50;
+            color: #ffffff;
         }
 
         .btn-dir:active {
-            transform: translate(-50%, -46%); /* Efeito de apertar o botão */
-            box-shadow: 0 0 0 var(--cor-madeira);
-            background: #f0f0f0;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: #1a252f;
         }
 
-        /* Posicionamento dos botões nos extremos do círculo */
-        #btn-n { top: -10px; left: 50%; }
-        #btn-s { top: 190px; left: 50%; }
-        #btn-w { top: 50%; left: -10px; }
-        #btn-e { top: 50%; left: 190px; }
+        #btn-n { top: 0%; left: 50%; }
+        #btn-s { top: 100%; left: 50%; }
+        #btn-w { top: 50%; left: 0%; }
+        #btn-e { top: 50%; left: 100%; }
 
         /* ========================================= */
 
@@ -321,10 +362,15 @@
             <span id="texto-instrucao">Ache o tesouro!</span>
         </div>
 
-        <div id="container-mapa">
-            <div id="rosa-dos-ventos">🧭</div>
-            <div id="tesouro-obj" class="celula sprite sprite-tesouro"></div>
-            <div id="jogador-obj" class="celula sprite"></div>
+        <div id="wrapper-mapa">
+            <div id="indicador-norte" title="Indicação do Norte">
+                <div id="seta-norte">▲<br><span>N</span></div>
+            </div>
+            
+            <div id="container-mapa">
+                <div id="tesouro-obj" class="celula sprite sprite-tesouro"></div>
+                <div id="jogador-obj" class="celula sprite"></div>
+            </div>
         </div>
 
         <div id="controles-bussola">
@@ -354,6 +400,7 @@
         const telaSelecao = document.getElementById('tela-selecao');
         const telaJogo = document.getElementById('tela-jogo');
         const containerMapa = document.getElementById('container-mapa');
+        const setaNorte = document.getElementById('seta-norte');
         const overlayDialogo = document.getElementById('overlay-dialogo');
         const textoPapagaio = document.getElementById('texto-papagaio');
         const textoNivel = document.getElementById('texto-nivel');
@@ -374,54 +421,52 @@
             if(controlePiscar) clearInterval(controlePiscar);
             
             controlePiscar = setInterval(() => {
-                // Ao usar % com background-size 200%, 100% mostra a parte de baixo (Frame 2)
                 elJogador.style.backgroundPosition = 'bottom';
                 
                 setTimeout(() => {
-                    // Volta pro Frame 1 no topo
                     elJogador.style.backgroundPosition = 'top';
                 }, 1000);
                 
             }, 4000); 
         }
 
-        // Sistema de Sorteio do Tesouro
         function sortearTesouro() {
             do {
-                posTesouro.x = Math.floor(Math.random() * 5); // Sorteia de 0 a 4
-                posTesouro.y = Math.floor(Math.random() * 5); // Sorteia de 0 a 4
+                posTesouro.x = Math.floor(Math.random() * 5); 
+                posTesouro.y = Math.floor(Math.random() * 5); 
             } while (posTesouro.x === posJogador.x && posTesouro.y === posJogador.y);
-            // O loop garante que o tesouro NUNCA vai cair na mesma casa que o jogador
         }
 
         function carregarNivel() {
             textoNivel.textContent = `Nível ${nivelAtual}`;
-            containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
-            elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
-            elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
 
-            // Define posição inicial do jogador
             if (nivelAtual === 1 || nivelAtual === 2) {
                 posJogador = { x: 2, y: 4 };
+                mapaRotacao = 0;
             } else if (nivelAtual === 3) {
                 posJogador = { x: 0, y: 2 };
                 mapaRotacao = 90; 
-                containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
-                elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
-                elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
             }
 
-            // Sorteia onde o baú vai aparecer neste nível
+            atualizarRotacoesVisuais();
             sortearTesouro();
 
-            // Mensagens da história
             if (nivelAtual === 2) {
                 mostrarDialogo("Arr, marujo! Curiosidade: o tesouro está em um novo lugar. Lembra que descer a montanha também pode ser ir pro Norte!");
             } else if (nivelAtual === 3) {
-                mostrarDialogo("Tempestade à vista! O mapa girou. Olhe a Rosa dos Ventos no fundo para não se perder!");
+                mostrarDialogo("Tempestade à vista! O mapa girou. Olhe a indicação de Norte no canto para não se perder!");
             }
 
             atualizarPosicoesVisuais();
+        }
+
+        function atualizarRotacoesVisuais() {
+            containerMapa.style.transform = `rotate(${mapaRotacao}deg)`;
+            elJogador.style.transform = `rotate(${-mapaRotacao}deg)`;
+            elTesouro.style.transform = `rotate(${-mapaRotacao}deg)`;
+            
+            // CORREÇÃO: A seta interna gira com o mapa para apontar exatamente onde o Norte real está agora!
+            setaNorte.style.transform = `rotate(${mapaRotacao}deg)`;
         }
 
         function mover(direcao) {
@@ -435,7 +480,6 @@
         }
 
         function atualizarPosicoesVisuais() {
-            // Agora usamos porcentagem (20% por casa) em vez de pixels fixos
             elJogador.style.left = (posJogador.x * 20) + '%';
             elJogador.style.top = (posJogador.y * 20) + '%';
             
