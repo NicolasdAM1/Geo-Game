@@ -1,10 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Geografia em Jogo</title>
-    <!-- Importando uma fonte arredondada e amigável do Google Fonts -->
     <link
       href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap"
       rel="stylesheet"
@@ -130,7 +129,9 @@
         margin-bottom: 15px;
       }
 
+      /* Alterado para dar suporte correto à tag span */
       .btn-jogar {
+        display: inline-block;
         background-color: #ff9800;
         color: white;
         border: none;
@@ -141,6 +142,7 @@
         cursor: pointer;
         transition: background-color 0.2s;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-decoration: none;
       }
 
       .card-jogo:hover .btn-jogar {
@@ -169,13 +171,12 @@
   <body>
     <header>
       <h1>GE🌎 - Game Educativo Orientado</h1>
-      <p class="subtitle">Escolha um tema e aprenda brincando !</p>
+      <p class="subtitle">Escolha um tema e aprenda brincando!</p>
     </header>
 
     <main>
       <div class="hub-grid">
-        <!-- Jogo 1: O Jogo das Direções -->
-        <a href="jogo-direcoes.html" class="card-jogo">
+        <a href="rosa-dos-ventos.html" class="card-jogo">
           <div class="card-imagem">🗺️</div>
           <div class="card-conteudo">
             <h2>Rosa dos Ventos</h2>
@@ -183,27 +184,25 @@
               Encontre tesouros guiando o personagem pelo Norte, Sul, Leste e
               Oeste!
             </p>
-            <button class="btn-jogar">Jogar</button>
+            <span class="btn-jogar">Jogar</span>
           </div>
         </a>
 
-        <!-- Jogo 2: Espaço Reservado -->
         <div class="card-jogo em-breve">
           <div class="card-imagem">🌎</div>
           <div class="card-conteudo">
             <h2>Continentes</h2>
             <p>Uma nova aventura geográfica está sendo preparada!</p>
-            <button class="btn-jogar">Em Breve</button>
+            <span class="btn-jogar">Em Breve</span>
           </div>
         </div>
 
-        <!-- Jogo 3: Espaço Reservado -->
         <div class="card-jogo em-breve">
           <div class="card-imagem">⛰️</div>
           <div class="card-conteudo">
             <h2>Biomas do Brasil</h2>
             <p>Uma nova aventura geográfica está sendo preparada!</p>
-            <button class="btn-jogar">Em Breve</button>
+            <span class="btn-jogar">Em Breve</span>
           </div>
         </div>
       </div>

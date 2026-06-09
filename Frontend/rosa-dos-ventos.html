@@ -51,7 +51,7 @@
         }
 
         /* =========================================
-           TELA DE SELEÇÃO RESPONSIVA
+           TELA DE SELEÇÃO + HOVER EFFECT
            ========================================= */
         .container-personagens {
             display: flex;
@@ -67,7 +67,7 @@
             border-radius: 15px;
             padding: 15px;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             width: 45%; 
             max-width: 200px;
             aspect-ratio: 1 / 1; /* Mantém sempre quadrado */
@@ -75,6 +75,13 @@
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
+        }
+
+        /* Efeito Hover solicitado */
+        .card-personagem:hover {
+            transform: scale(1.08);
+            border-color: var(--cor-bussola);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .card-personagem:active {
@@ -217,7 +224,7 @@
            ========================================= */
         #controles-bussola {
             position: relative;
-            width: 190px; /* Aumentado sutilmente para acomodar melhor os novos botões */
+            width: 190px; 
             height: 190px;
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.4);
@@ -258,7 +265,6 @@
             border-radius: 50%;
         }
 
-        /* Reformulado para formato pílula devido ao texto "Ir ao Norte" */
         .btn-dir {
             position: absolute;
             padding: 4px 10px;
@@ -296,9 +302,10 @@
         #btn-w { top: 50%; left: -10%; }
         #btn-e { top: 50%; left: 110%; }
 
-        /* ========================================= */
-
-        #overlay-dialogo {
+        /* =========================================
+           DIÁLOGOS E MODAIS
+           ========================================= */
+        #overlay-dialogo, #overlay-fim {
             display: none; 
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -308,9 +315,9 @@
             padding: 20px;
         }
 
-        #overlay-dialogo.ativo { display: flex; }
+        #overlay-dialogo.ativo, #overlay-fim.ativo { display: flex; }
 
-        #caixa-dialogo {
+        #caixa-dialogo, #caixa-fim {
             background: white;
             border: 6px solid var(--cor-madeira);
             border-radius: 15px;
@@ -328,15 +335,39 @@
 
         #papagaio-avatar { font-size: 4rem; margin-bottom: 10px; }
         #texto-papagaio { font-size: 1.1rem; color: #333; margin-bottom: 20px; line-height: 1.4; }
-        #btn-continuar {
+        
+        .btn-ui {
             padding: 10px 25px;
             font-size: 1.2rem;
             font-weight: bold;
-            background: #4CAF50;
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+
+        #btn-continuar, .btn-recomecar {
+            background: #4CAF50;
+        }
+        #btn-continuar:hover, .btn-recomecar:hover {
+            background: #43a047;
+        }
+
+        .btn-hub {
+            background: #ff9800;
+            margin-top: 10px;
+        }
+        .btn-hub:hover {
+            background: #e65100;
+        }
+
+        .container-botoes-fim {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -386,7 +417,19 @@
         <div id="caixa-dialogo">
             <div id="papagaio-avatar">🦜</div>
             <p id="texto-papagaio">Arr! Mensagem do Loro Ajudante!</p>
-            <button id="btn-continuar" onclick="fecharDialogo()">Entendido!</button>
+            <button id="btn-continuar" class="btn-ui" onclick="fecharDialogo()">Entendido!</button>
+        </div>
+    </div>
+
+    <div id="overlay-fim">
+        <div id="caixa-fim">
+            <div style="font-size: 4rem; margin-bottom: 10px;">🏆</div>
+            <h2 style="color: var(--cor-madeira); margin-bottom: 10px;">Parabéns, Capitão!</h2>
+            <p style="font-size: 1.1rem; color: #333;">Você encontrou todos os tesouros e dominou os segredos da Rosa dos Ventos!</p>
+            <div class="container-botoes-fim">
+                <button class="btn-ui btn-recomecar" onclick="recomecarJogo()">Jogar de Novo</button>
+                <button class="btn-ui btn-hub" onclick="voltarAoHub()">Voltar ao Hub</button>
+            </div>
         </div>
     </div>
 
@@ -397,12 +440,11 @@
         let mapaRotacao = 0; 
         let controlePiscar;
 
-        // Pool com as 5 curiosidades solicitadas sobre direções
         const curiosidadesRosaDosVentos = [
             "Arr! Sabia que o Norte não é necessariamente uma 'subida'? Em um mapa, 'cima' é apenas uma convenção cartográfica! O Norte aponta para o polo magnético da Terra, não para o céu!",
             "Marujo, a Rosa dos Ventos nasceu na Grécia Antiga! Ela foi criada originalmente para indicar a direção dos ventos no Mar Mediterrâneo, e não apenas para fins de navegação em terra!",
             "Olho na bússola! Entre os pontos cardeais existem os pontos colaterais: Nordeste, Sudeste, Sudoeste e Noroeste. Eles dividem o horizonte com ainda mais precisão!",
-            "Uma dica de navegação velha como o mundo: o Sol sempre nasce no lado Leste (Oriente) e se põe no lado Oeste (Ocidente). Use isso caso perca sua bússola em uma ilha deserta!",
+            "Uma dica de navegação velha como o mundo: o Sol sempre nasce no lado Leste (Oriente) e se põe no lado Oeste (Ocidente). Use isso caso perca sua bússola em uma island deserta!",
             "Atenção, Capitão! As bússolas apontam para o Norte Magnético, e não para o Norte Geográfico verdadeiro. E o mais louco: o Norte Magnético muda de lugar lentamente ao longo dos anos!"
         ];
 
@@ -411,6 +453,7 @@
         const containerMapa = document.getElementById('container-mapa');
         const setaNorte = document.getElementById('seta-norte');
         const overlayDialogo = document.getElementById('overlay-dialogo');
+        const overlayFim = document.getElementById('overlay-fim');
         const textoPapagaio = document.getElementById('texto-papagaio');
         const textoNivel = document.getElementById('texto-nivel');
 
@@ -448,11 +491,8 @@
 
         function carregarNivel() {
             textoNivel.textContent = `Nível ${nivelAtual}`;
-            
-            // Retorna o jogador para uma posição base segura a cada novo mapa
             posJogador = { x: 2, y: 4 };
 
-            // O mapa rotaciona +90 graus progressivamente a cada novo nível (a partir do nível 2)
             if (nivelAtual > 1) {
                 mapaRotacao += 90;
             } else {
@@ -462,7 +502,6 @@
             atualizarRotacoesVisuais();
             sortearTesouro();
 
-            // A cada duas viradas de mapa (Nível 3, Nível 5, Nível 7, Nível 9, Nível 11), o Papagaio conta uma curiosidade
             let totalViradas = nivelAtual - 1;
             if (totalViradas > 0 && totalViradas % 2 === 0) {
                 let indiceCuriosidade = (totalViradas / 2) - 1;
@@ -470,7 +509,6 @@
                     mostrarDialogo(curiosidadesRosaDosVentos[indiceCuriosidade]);
                 }
             } else if (nivelAtual > 1) {
-                // Alerta padrão de tempestade/giro para os níveis intermediários
                 mostrarDialogo("Os ventos mudaram e o mapa girou de novo! Fique atento à bússola fixa no topo!");
             }
 
@@ -505,18 +543,12 @@
         function verificarVitoria() {
             if (posJogador.x === posTesouro.x && posJogador.y === posTesouro.y) {
                 setTimeout(() => {
-                    // O jogo avança até o nível 11 para que o jogador veja todas as 5 curiosidades (10 viradas no total)
                     if (nivelAtual < 11) {
                         nivelAtual++;
                         carregarNivel();
                     } else {
-                        mostrarDialogo("Parabéns, Capitão! Você encontrou todos os tesouros e aprendeu todos os segredos da Rosa dos Ventos! O jogo vai reiniciar.");
-                        setTimeout(() => {
-                            nivelAtual = 1;
-                            mapaRotacao = 0;
-                            telaJogo.classList.remove('ativo');
-                            telaSelecao.classList.add('ativo');
-                        }, 4000);
+                        // Ativa a tela final customizada sem acionar ou mudar a lógica do papagaio
+                        overlayFim.classList.add('ativo');
                     }
                 }, 300);
             }
@@ -529,6 +561,19 @@
 
         function fecharDialogo() {
             overlayDialogo.classList.remove('ativo');
+        }
+
+        // Funções de controle de fluxo de fim de jogo
+        function recomecarJogo() {
+            nivelAtual = 1;
+            mapaRotacao = 0;
+            overlayFim.classList.remove('ativo');
+            telaJogo.classList.remove('ativo');
+            telaSelecao.classList.add('ativo');
+        }
+
+        function voltarAoHub() {
+            window.location.href = 'index.html';
         }
     </script>
 </body>
