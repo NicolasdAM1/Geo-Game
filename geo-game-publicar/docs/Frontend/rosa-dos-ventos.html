@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GEO - Rosa dos Ventos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Mesa de cartas náuticas: céu, moldura de madeira, bússola dourada.
+           Três zonas na tela do jogo: placar com a rosa dos ventos no topo,
+           mapa quadrado no meio e somente os controles embaixo. */
+        :root {
+            --ceu-alto: #a6dcf3;
+            --ceu-baixo: #7ac6e9;
+            --madeira: #5c4033;
+            --madeira-clara: #8b5a2b;
+            --pergaminho: #fff6dc;
+            --pergaminho-linha: #e3d3a7;
+            --ouro: #f1c40f;
+            --norte: #c8321f;
+            --tinta: #2b2118;
+            --tinta-suave: #6b5a4a;
+            --verde: #2e7d32;
+            --laranja: #ff9800;
+            --fonte: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+            --tecla: clamp(48px, 8.5vh, 66px);
+            --tecla-larg: clamp(84px, 26vw, 112px);
+            --giro: 0deg;
+            color-scheme: light;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { height: 100%; }
+
+        body {
+            margin: 0;
+            padding-inline: 16px;
+            padding-block: 12px;
+            font-family: var(--fonte);
+            color: var(--tinta);
+            background-color: var(--ceu-baixo);
+            background-image: linear-gradient(180deg, var(--ceu-alto), var(--ceu-baixo));
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        [hidden] { display: none !important; }
+
+        button { font-family: inherit; touch-action: manipulation; }
+
+        :focus-visible {
+            outline: 4px solid var(--tinta);
+            outline-offset: 3px;
+        }
+
+        #app { height: 100%; }
+
+        /* =========================================
+           SPRITES (os mesmos personagens e imagens do projeto)
+           ========================================= */
+        .sprite {
+            background-size: 100% 200%;
+            background-repeat: no-repeat;
+            background-position: top;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .sprite-cachorro { background-image: url('../Assets/CachorroPirata.png'); }
+        .sprite-gata     { background-image: url('../Assets/GataPirata.png'); }
+        .sprite-tesouro  { background-size: 100% 100%; background-image: url('../Assets/X-MarksTheSpot.png'); }
+
+        /* =========================================
+           TELA DE ESCOLHA DO CAPITÃO
+           ========================================= */
+        #tela-selecao {
+            height: 100%;
+            min-height: 440px;
+            max-width: 560px;
+            margin-inline: auto;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            text-align: center;
+        }
+        #tela-selecao.ativo { display: flex; }
+
+        .placa {
+            margin: 0;
+            padding: 10px 24px;
+            font-size: clamp(1.5rem, 6vw, 2.1rem);
+            font-weight: 600;
+            color: var(--pergaminho);
+            background: var(--madeira);
+            border-radius: 14px;
+            box-shadow: 0 5px 0 rgba(43, 33, 24, 0.35);
+            text-wrap: balance;
+        }
+
+        .explicacao {
+            margin: 0;
+            max-width: 34ch;
+            font-size: 1.05rem;
+            line-height: 1.4;
+            text-wrap: balance;
+        }
+
+        .cartas {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .card-personagem {
+            appearance: none;
+            width: min(44vw, 190px);
+            padding: 16px 12px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--tinta);
+            background: var(--pergaminho);
+            border: 4px solid var(--madeira);
+            border-radius: 18px;
+            box-shadow: 0 6px 0 rgba(43, 33, 24, 0.35);
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .card-personagem:hover { transform: translateY(-4px); border-color: var(--ouro); }
+        .card-personagem:active { transform: translateY(1px); }
+
+        .preview-personagem { width: 84px; height: 84px; }
+
+        .link-hub {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--tinta);
+        }
+
+        /* =========================================
+           TELA DO JOGO
+           ========================================= */
+        #tela-jogo {
+            display: none;
+            height: 100%;
+            min-height: 470px;
+            width: 100%;
+            max-width: 560px;
+            margin-inline: auto;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            gap: 12px;
+        }
+        #tela-jogo.ativo { display: grid; }
+
+        /* Placar + rosa dos ventos */
+        #hud {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .hud-info {
+            flex: 1;
+            min-width: 0;
+            display: grid;
+            gap: 7px;
+            padding: 10px 14px;
+            background: var(--pergaminho);
+            border: 4px solid var(--madeira);
+            border-radius: 14px;
+            box-shadow: 0 4px 0 rgba(43, 33, 24, 0.3);
+        }
+        #texto-nivel { margin: 0; font-size: 1.15rem; font-weight: 600; }
+        #texto-instrucao { margin: 0; font-size: 0.95rem; line-height: 1.3; color: var(--tinta-suave); }
+
+        .segmentos { display: flex; gap: 3px; }
+        .segmentos i {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--pergaminho-linha);
+        }
+        .segmentos i.feito { background: var(--ouro); }
+        .segmentos i.atual { background: var(--madeira-clara); }
+
+        #bussola {
+            flex: none;
+            width: clamp(88px, 24vw, 112px);
+            aspect-ratio: 1;
+            padding: 4px;
+            background: var(--pergaminho);
+            border: 4px solid var(--madeira);
+            border-radius: 50%;
+            box-shadow: 0 4px 0 rgba(43, 33, 24, 0.3);
+        }
+        #bussola svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+        .aro { fill: none; stroke: var(--ouro); stroke-width: 5; }
+        .marca { stroke: var(--madeira-clara); stroke-width: 3; stroke-linecap: round; }
+        .ponta { fill: var(--tinta); }
+        .ponta-norte { fill: var(--norte); }
+        .ponta-menor { fill: var(--madeira-clara); }
+        .miolo { fill: var(--pergaminho); stroke: var(--tinta); stroke-width: 3; }
+        .letra {
+            font-family: var(--fonte);
+            font-size: 25px;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: central;
+            fill: var(--tinta);
+        }
+        .letra-norte { fill: var(--norte); }
+
+        #rosa {
+            transform-origin: 0 0;
+            transform: rotate(var(--giro));
+            transition: transform 1.5s ease-in-out;
+        }
+        #rosa .letra {
+            transform-box: fill-box;
+            transform-origin: center;
+            transform: rotate(calc(var(--giro) * -1));
+            transition: transform 1.5s ease-in-out;
+        }
+
+        /* Mapa */
+        #palco {
+            min-height: 0;
+            container-type: size;
+            display: grid;
+            place-items: center;
+        }
+
+        #wrapper-mapa {
+            position: relative;
+            width: min(100cqw, 100cqh);
+            aspect-ratio: 1;
+            border: 6px solid var(--madeira);
+            border-radius: 14px;
+            overflow: hidden;
+            background: #00c853;
+            box-shadow: 0 6px 0 rgba(43, 33, 24, 0.35);
+        }
+
+        #wrapper-mapa.tremer { animation: tremer 0.28s ease-in-out; }
+        @keyframes tremer {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        #container-mapa {
+            position: absolute;
+            inset: 0;
+            background-image: url('../Assets/Background.png');
+            background-size: auto 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            transform: rotate(var(--giro));
+            transition: transform 1.5s ease-in-out;
+        }
+
+        /* Grade 5 x 5 */
+        #container-mapa::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px);
+            background-size: 20% 20%;
+            pointer-events: none;
+        }
+
+        .celula {
+            position: absolute;
+            width: 20%;
+            height: 20%;
+            z-index: 2;
+            transform: rotate(calc(var(--giro) * -1));
+            transition: top 0.3s ease-out, left 0.3s ease-out, transform 1.5s ease-in-out;
+        }
+        #tesouro-obj { z-index: 1; }
+        #tesouro-obj::after {
+            content: '';
+            position: absolute;
+            inset: 8%;
+            border: 3px dashed rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            animation: pulso 1.6s ease-in-out infinite;
+        }
+        @keyframes pulso {
+            0%, 100% { transform: scale(0.85); opacity: 0.9; }
+            50% { transform: scale(1.08); opacity: 0.5; }
+        }
+
+        /* Controles (somente isto fica embaixo) */
+        #controles {
+            justify-self: center;
+            display: grid;
+            grid-template-columns: repeat(3, var(--tecla-larg));
+            grid-template-rows: repeat(3, var(--tecla));
+            gap: 6px;
+        }
+        #btn-n { grid-area: 1 / 2; }
+        #btn-w { grid-area: 2 / 1; }
+        #btn-e { grid-area: 2 / 3; }
+        #btn-s { grid-area: 3 / 2; }
+
+        .centro-cruz {
+            grid-area: 2 / 2;
+            align-self: center;
+            justify-self: center;
+            width: 36%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: var(--madeira);
+            box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.25);
+        }
+
+        .tecla {
+            appearance: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            padding: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--tinta);
+            background: #ffffff;
+            border: 3px solid var(--madeira);
+            border-radius: 14px;
+            box-shadow: 0 4px 0 var(--madeira);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .tecla svg { width: 20px; height: 20px; fill: currentColor; }
+        #btn-n { color: var(--norte); }
+        #btn-n .nome { color: var(--tinta); }
+        #btn-e svg { transform: rotate(90deg); }
+        #btn-s svg { transform: rotate(180deg); }
+        #btn-w svg { transform: rotate(-90deg); }
+        .tecla:hover { background: var(--pergaminho); }
+        .tecla:active, .tecla.pressionada {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 var(--madeira);
+            background: var(--ouro);
+        }
+
+        /* =========================================
+           DIÁLOGOS
+           ========================================= */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(43, 33, 24, 0.68);
+        }
+
+        .caixa {
+            width: 100%;
+            max-width: 360px;
+            padding: 22px 20px;
+            text-align: center;
+            background: var(--pergaminho);
+            border: 6px solid var(--madeira);
+            border-radius: 18px;
+            animation: entrar 0.25s ease-out;
+        }
+        @keyframes entrar {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .caixa .avatar { font-size: 3.5rem; line-height: 1; margin-bottom: 10px; }
+        .caixa h2 { margin: 0 0 8px; font-size: 1.5rem; color: var(--madeira); }
+        .caixa p { margin: 0 0 18px; font-size: 1.1rem; line-height: 1.45; }
+
+        .botoes { display: grid; gap: 10px; }
+
+        .btn-ui {
+            display: block;
+            padding: 11px 22px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 0 rgba(43, 33, 24, 0.35);
+            cursor: pointer;
+        }
+        .btn-principal { color: #ffffff; background: var(--verde); }
+        .btn-hub { color: var(--tinta); background: var(--laranja); }
+        .btn-ui:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(43, 33, 24, 0.35); }
+
+        /* =========================================
+           TELAS LARGAS: placar à esquerda, rosa dos ventos à direita do mapa
+           ========================================= */
+        @media (min-width: 820px) and (min-aspect-ratio: 5/4) {
+            #tela-jogo.ativo {
+                max-width: 1100px;
+                grid-template-columns: minmax(0, 1fr) min(72vh, 46vw, 640px) minmax(0, 1fr);
+                grid-template-rows: minmax(0, 1fr) auto;
+                grid-template-areas:
+                    "info palco bussola"
+                    ".    controles .";
+                column-gap: 24px;
+            }
+            #hud { display: contents; }
+            .hud-info { grid-area: info; align-self: start; justify-self: end; width: min(100%, 320px); }
+            #bussola { grid-area: bussola; align-self: start; justify-self: start; width: clamp(140px, 16vw, 200px); }
+            #palco { grid-area: palco; }
+            #controles { grid-area: controles; }
+        }
+
+        /* Celular deitado: controles ao lado, para o mapa não ficar minúsculo */
+        @media (min-width: 820px) and (min-aspect-ratio: 5/4) and (max-height: 520px) {
+            #tela-jogo.ativo {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) auto;
+                grid-template-rows: auto minmax(0, 1fr);
+                grid-template-areas:
+                    "info palco controles"
+                    "bussola palco controles";
+                column-gap: 16px;
+            }
+            #tela-jogo { min-height: 0; }
+            .hud-info { justify-self: stretch; width: auto; }
+            #bussola { justify-self: center; width: 96px; }
+            #controles { align-self: center; }
+            :root { --tecla: 52px; --tecla-larg: 80px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+
+    <section id="tela-selecao" class="ativo" aria-labelledby="titulo-selecao">
+        <h1 id="titulo-selecao" class="placa">Escolha seu Capitão!</h1>
+        <p class="explicacao">Guie o capitão até o X de cada mapa. A rosa dos ventos mostra onde fica o Norte.</p>
+        <div class="cartas">
+            <button type="button" class="card-personagem" data-sprite="sprite-cachorro">
+                <span class="sprite sprite-cachorro preview-personagem" aria-hidden="true"></span>
+                Capitão Maurujo
+            </button>
+            <button type="button" class="card-personagem" data-sprite="sprite-gata">
+                <span class="sprite sprite-gata preview-personagem" aria-hidden="true"></span>
+                Capitã Miarr
+            </button>
+        </div>
+        <a class="link-hub" href="../index.html" data-hub>Voltar ao Hub</a>
+    </section>
+
+    <section id="tela-jogo" aria-label="Jogo Rosa dos Ventos">
+        <div id="hud">
+            <div class="hud-info">
+                <p id="texto-nivel">Nível 1 de 11</p>
+                <div class="segmentos" id="segmentos" aria-hidden="true"></div>
+                <p id="texto-instrucao" aria-live="polite">Ache o X no mapa.</p>
+            </div>
+
+            <div id="bussola" role="img" aria-label="Rosa dos ventos. O N vermelho mostra onde fica o Norte no mapa.">
+                <svg viewBox="-100 -100 200 200" aria-hidden="true">
+                    <circle class="aro" r="94"></circle>
+                    <g id="rosa">
+                        <!-- pontas colaterais -->
+                        <g class="ponta-menor" transform="rotate(45)">
+                            <polygon points="0,-46 7,0 -7,0"></polygon>
+                            <polygon points="0,46 7,0 -7,0"></polygon>
+                            <polygon points="46,0 0,7 0,-7"></polygon>
+                            <polygon points="-46,0 0,7 0,-7"></polygon>
+                        </g>
+                        <!-- pontas cardeais -->
+                        <polygon class="ponta ponta-norte" points="0,-62 12,0 -12,0"></polygon>
+                        <polygon class="ponta" points="0,62 12,0 -12,0"></polygon>
+                        <polygon class="ponta" points="62,0 0,12 0,-12"></polygon>
+                        <polygon class="ponta" points="-62,0 0,12 0,-12"></polygon>
+                        <circle class="miolo" r="7"></circle>
+                        <text class="letra letra-norte" x="0" y="-77">N</text>
+                        <text class="letra" x="0" y="77">S</text>
+                        <text class="letra" x="77" y="0">L</text>
+                        <text class="letra" x="-77" y="0">O</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div id="palco">
+            <div id="wrapper-mapa">
+                <div id="container-mapa">
+                    <div id="tesouro-obj" class="celula sprite sprite-tesouro"></div>
+                    <div id="jogador-obj" class="celula sprite"></div>
+                </div>
+            </div>
+        </div>
+
+        <nav id="controles" aria-label="Controles de direção">
+            <button type="button" id="btn-n" class="tecla" data-dir="n" aria-label="Ir ao norte">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 15H3z"></path></svg>
+                <span class="nome">Norte</span>
+            </button>
+            <button type="button" id="btn-w" class="tecla" data-dir="w" aria-label="Ir ao oeste">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 15H3z"></path></svg>
+                <span class="nome">Oeste</span>
+            </button>
+            <span class="centro-cruz" aria-hidden="true"></span>
+            <button type="button" id="btn-e" class="tecla" data-dir="e" aria-label="Ir ao leste">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 15H3z"></path></svg>
+                <span class="nome">Leste</span>
+            </button>
+            <button type="button" id="btn-s" class="tecla" data-dir="s" aria-label="Ir ao sul">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 15H3z"></path></svg>
+                <span class="nome">Sul</span>
+            </button>
+        </nav>
+    </section>
+
+    <div id="overlay-dialogo" class="overlay" hidden>
+        <div class="caixa" role="dialog" aria-modal="true" aria-label="Mensagem do Loro Ajudante">
+            <div class="avatar" aria-hidden="true">🦜</div>
+            <p id="texto-papagaio">Arr! Mensagem do Loro Ajudante!</p>
+            <button type="button" id="btn-continuar" class="btn-ui btn-principal">Entendido!</button>
+        </div>
+    </div>
+
+    <div id="overlay-fim" class="overlay" hidden>
+        <div class="caixa" role="dialog" aria-modal="true" aria-labelledby="titulo-fim">
+            <div class="avatar" aria-hidden="true">🏆</div>
+            <h2 id="titulo-fim">Parabéns, Capitão!</h2>
+            <p>Você encontrou todos os tesouros e dominou os segredos da Rosa dos Ventos!</p>
+            <div class="botoes">
+                <button type="button" id="btn-recomecar" class="btn-ui btn-principal">Jogar de novo</button>
+                <a class="btn-ui btn-hub" href="../index.html" data-hub>Voltar ao Hub</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TOTAL_NIVEIS = 11;
+    const LADO = 5;
+
+    let nivelAtual = 1;
+    let posJogador = { x: 2, y: 4 };
+    let posTesouro = { x: 0, y: 0 };
+    let mapaRotacao = 0;
+    let bloqueado = true;
+    let controlePiscar;
+
+    const curiosidadesRosaDosVentos = [
+        "Arr! Sabia que o Norte não é necessariamente uma 'subida'? Em um mapa, 'cima' é apenas uma convenção cartográfica! O Norte aponta para o polo magnético da Terra, não para o céu!",
+        "Marujo, a Rosa dos Ventos nasceu na Grécia Antiga! Ela foi criada originalmente para indicar a direção dos ventos no Mar Mediterrâneo, e não apenas para fins de navegação em terra!",
+        "Olho na bússola! Entre os pontos cardeais existem os pontos colaterais: Nordeste, Sudeste, Sudoeste e Noroeste. Eles dividem o horizonte com ainda mais precisão!",
+        "Uma dica de navegação velha como o mundo: o Sol sempre nasce no lado Leste (Oriente) e se põe no lado Oeste (Ocidente). Use isso caso perca sua bússola em uma ilha deserta!",
+        "Atenção, Capitão! As bússolas apontam para o Norte Magnético, e não para o Norte Geográfico verdadeiro. E o mais louco: o Norte Magnético muda de lugar lentamente ao longo dos anos!"
+    ];
+
+    const telaSelecao = document.getElementById('tela-selecao');
+    const telaJogo = document.getElementById('tela-jogo');
+    const wrapperMapa = document.getElementById('wrapper-mapa');
+    const overlayDialogo = document.getElementById('overlay-dialogo');
+    const overlayFim = document.getElementById('overlay-fim');
+    const textoPapagaio = document.getElementById('texto-papagaio');
+    const textoNivel = document.getElementById('texto-nivel');
+    const textoInstrucao = document.getElementById('texto-instrucao');
+    const btnContinuar = document.getElementById('btn-continuar');
+    const btnRecomecar = document.getElementById('btn-recomecar');
+    const elJogador = document.getElementById('jogador-obj');
+    const elTesouro = document.getElementById('tesouro-obj');
+    const containerSegmentos = document.getElementById('segmentos');
+
+    for (let i = 0; i < TOTAL_NIVEIS; i++) {
+        containerSegmentos.appendChild(document.createElement('i'));
+    }
+    const segmentos = Array.from(containerSegmentos.children);
+
+    function atualizarProgresso(concluidos) {
+        segmentos.forEach((seg, i) => {
+            seg.className = i < concluidos ? 'feito' : (i === concluidos ? 'atual' : '');
+        });
+    }
+
+    function iniciarJogo(classeSprite) {
+        nivelAtual = 1;
+        mapaRotacao = 0;
+        elJogador.className = `celula sprite ${classeSprite}`;
+        telaSelecao.classList.remove('ativo');
+        telaJogo.classList.add('ativo');
+
+        carregarNivel();
+        iniciarAnimacaoIdle();
+    }
+
+    function iniciarAnimacaoIdle() {
+        if (controlePiscar) clearInterval(controlePiscar);
+
+        controlePiscar = setInterval(() => {
+            elJogador.style.backgroundPosition = 'bottom';
+            setTimeout(() => { elJogador.style.backgroundPosition = 'top'; }, 1000);
+        }, 4000);
+    }
+
+    function sortearTesouro() {
+        do {
+            posTesouro.x = Math.floor(Math.random() * LADO);
+            posTesouro.y = Math.floor(Math.random() * LADO);
+        } while (posTesouro.x === posJogador.x && posTesouro.y === posJogador.y);
+    }
+
+    function carregarNivel() {
+        textoNivel.textContent = `Nível ${nivelAtual} de ${TOTAL_NIVEIS}`;
+        atualizarProgresso(nivelAtual - 1);
+        posJogador = { x: 2, y: 4 };
+
+        if (nivelAtual > 1) {
+            mapaRotacao += 90;
+        } else {
+            mapaRotacao = 0;
+        }
+
+        atualizarRotacoesVisuais();
+        sortearTesouro();
+        atualizarPosicoesVisuais();
+
+        textoInstrucao.textContent = nivelAtual === 1
+            ? 'Siga as direções até o X. Neste mapa, o Norte está para cima.'
+            : 'O mapa girou! Veja na rosa dos ventos onde está o N.';
+
+        const totalViradas = nivelAtual - 1;
+        if (totalViradas > 0 && totalViradas % 2 === 0) {
+            const indiceCuriosidade = (totalViradas / 2) - 1;
+            if (indiceCuriosidade < curiosidadesRosaDosVentos.length) {
+                mostrarDialogo(curiosidadesRosaDosVentos[indiceCuriosidade]);
+                return;
+            }
+        } else if (nivelAtual > 1) {
+            mostrarDialogo("Os ventos mudaram e o mapa girou de novo! Fique atento à rosa dos ventos no topo!");
+            return;
+        }
+        bloqueado = false;
+    }
+
+    function atualizarRotacoesVisuais() {
+        telaJogo.style.setProperty('--giro', `${mapaRotacao}deg`);
+    }
+
+    function mover(direcao) {
+        if (bloqueado) return;
+
+        const passos = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
+        const [dx, dy] = passos[direcao];
+        const novoX = posJogador.x + dx;
+        const novoY = posJogador.y + dy;
+
+        if (novoX < 0 || novoX >= LADO || novoY < 0 || novoY >= LADO) {
+            wrapperMapa.classList.remove('tremer');
+            void wrapperMapa.offsetWidth;
+            wrapperMapa.classList.add('tremer');
+            return;
+        }
+
+        posJogador = { x: novoX, y: novoY };
+        atualizarPosicoesVisuais();
+        verificarVitoria();
+    }
+
+    function atualizarPosicoesVisuais() {
+        elJogador.style.left = (posJogador.x * 20) + '%';
+        elJogador.style.top = (posJogador.y * 20) + '%';
+
+        elTesouro.style.left = (posTesouro.x * 20) + '%';
+        elTesouro.style.top = (posTesouro.y * 20) + '%';
+    }
+
+    function verificarVitoria() {
+        if (posJogador.x !== posTesouro.x || posJogador.y !== posTesouro.y) return;
+
+        bloqueado = true;
+        atualizarProgresso(nivelAtual);
+        textoInstrucao.textContent = 'Tesouro encontrado!';
+
+        setTimeout(() => {
+            if (nivelAtual < TOTAL_NIVEIS) {
+                nivelAtual++;
+                carregarNivel();
+            } else {
+                overlayFim.hidden = false;
+                btnRecomecar.focus();
+            }
+        }, 800);
+    }
+
+    function mostrarDialogo(texto) {
+        bloqueado = true;
+        textoPapagaio.textContent = texto;
+        overlayDialogo.hidden = false;
+        btnContinuar.focus();
+    }
+
+    function fecharDialogo() {
+        overlayDialogo.hidden = true;
+        bloqueado = false;
+    }
+
+    function recomecarJogo() {
+        nivelAtual = 1;
+        mapaRotacao = 0;
+        bloqueado = true;
+        overlayFim.hidden = true;
+        telaJogo.classList.remove('ativo');
+        telaSelecao.classList.add('ativo');
+        atualizarRotacoesVisuais();
+    }
+
+    document.querySelectorAll('.card-personagem').forEach((card) => {
+        card.addEventListener('click', () => iniciarJogo(card.dataset.sprite));
+    });
+
+    document.getElementById('controles').addEventListener('click', (e) => {
+        const botao = e.target.closest('[data-dir]');
+        if (botao) mover(botao.dataset.dir);
+    });
+
+    btnContinuar.addEventListener('click', fecharDialogo);
+    btnRecomecar.addEventListener('click', recomecarJogo);
+
+    // Teclado: setas ou W A S D (W = Norte, S = Sul, D = Leste, A = Oeste)
+    const teclas = {
+        ArrowUp: 'n', ArrowDown: 's', ArrowRight: 'e', ArrowLeft: 'w',
+        w: 'n', s: 's', d: 'e', a: 'w', W: 'n', S: 's', D: 'e', A: 'w'
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if (!telaJogo.classList.contains('ativo')) return;
+        const direcao = teclas[e.key];
+        if (!direcao) return;
+        e.preventDefault();
+
+        const botao = document.querySelector(`[data-dir="${direcao}"]`);
+        botao.classList.add('pressionada');
+        setTimeout(() => botao.classList.remove('pressionada'), 150);
+        mover(direcao);
+    });
+</script>
+</body>
+</html>
